@@ -8,6 +8,18 @@ from oauth2client.service_account import ServiceAccountCredentials
 SCOPES = ['https://www.googleapis.com/auth/analytics.readonly']
 KEY_FILE_LOCATION = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
+
+
+def getUserActivity(analytics, viewId, userId, dateRange):
+  return analytics.userActivity().search(
+    body={
+      "dateRange": dateRange,
+      "viewId": viewId,
+      "user": {'type': 'CLIENT_ID', 'userId': userId}
+    }
+  ).execute()
+
+
 def extractClientIds(response):
   clientIds = []
   for report in response.get('reports', []):
