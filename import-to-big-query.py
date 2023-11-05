@@ -8,6 +8,14 @@ from oauth2client.service_account import ServiceAccountCredentials
 SCOPES = ['https://www.googleapis.com/auth/analytics.readonly']
 KEY_FILE_LOCATION = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
+pp = pprint.PrettyPrinter(indent=2)
+bq = bigquery.Client()
+
+def initializeAnalyticsReporting():
+  credentials = ServiceAccountCredentials.from_json_keyfile_name(KEY_FILE_LOCATION, SCOPES)
+  analytics = build('analyticsreporting', 'v4', credentials=credentials)
+  return analytics
+
 def getSessionsByClientId(analytics, viewId, dateRange):
   return analytics.reports().batchGet(
       body={
@@ -89,5 +97,27 @@ def createTable(table):
 
 
 def main(viewId, table, dateRange):
+  analytics = initializeAnalyticsReporting()
+  sessions = getSessionsByClientId(analytics, viewId, dateRange)
+  clientIds = extractClientIds(sessions)
+
+  print(f"Creating table {table}")
+  createTable(table)
+
+  inserts = []
+  for clientId in clientIds:
+    activities = extractActivities(getUserActivity(analytics, viewId, clientId, dateRange))
+    print("Client: " + clientId)
+    print("-------------------")
+    pp.pprint(activities)
+    inserts.extend(generateInserts(clientId, activities))
+  print("Inserting data into BigQuery")
+  queryJob = bq.query("INSERT INTO `" + table + "` values " + ",".join(inserts))
+  results = queryJob.result()
 
 if __name__ == '__main__':
+  parser = ArgumentParser()
+  parser.add_argument("-v", "--view", dest="viewId", help="Get analytics from view ID", required=True)
+  parser.add_argument("-t", "--table", dest="table", help="The destination table in which to save the analytics data, using a fully-qualified path of the form <organisation>.<dataset>.<table-name>. This table will be created and should not already exist", required=True)
+  args = parser.parse_args()
+  main(args.viewId, args.table, {'startDate': '7daysAgo', 'endDate': 'today'})
