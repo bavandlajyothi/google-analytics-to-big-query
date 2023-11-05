@@ -9,6 +9,24 @@ SCOPES = ['https://www.googleapis.com/auth/analytics.readonly']
 KEY_FILE_LOCATION = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
 
+def generateInserts(clientId, activities):
+  inserts = []
+  for activity in activities:
+    inserts.append(f"""(
+    "{clientId}",
+    "{activity['activityTime']}",
+    "{activity['activityType']}",
+    "{activity['campaign']}",
+    "{activity['channelGrouping']}",
+    "{activity['hostname']}",
+    "{activity['keyword']}",
+    "{activity['landingPagePath']}",
+    "{activity['medium']}",
+    ["{activity['pageview']['pagePath']}"],
+    "{activity['source']}")
+    """)
+  return inserts
+
 def createTable(table):
   query = f"""CREATE TABLE `{table}` (
   client_id STRING NOT NULL,
