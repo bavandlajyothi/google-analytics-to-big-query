@@ -8,7 +8,18 @@ from oauth2client.service_account import ServiceAccountCredentials
 SCOPES = ['https://www.googleapis.com/auth/analytics.readonly']
 KEY_FILE_LOCATION = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
-
+def extractClientIds(response):
+  clientIds = []
+  for report in response.get('reports', []):
+    columnHeader = report.get('columnHeader', {})
+    dimensionHeaders = columnHeader.get('dimensions', [])
+    metricHeaders = columnHeader.get('metricHeader', {}).get('metricHeaderEntries', [])
+    for row in report.get('data', {}).get('rows', []):
+      dimensions = row.get('dimensions', [])
+      for header, dimension in zip(dimensionHeaders, dimensions):
+        if header == 'ga:clientId':
+          clientIds.append(dimension)
+  return clientIds
 
 def extractActivities(response):
   activities = []
