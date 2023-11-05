@@ -9,6 +9,15 @@ SCOPES = ['https://www.googleapis.com/auth/analytics.readonly']
 KEY_FILE_LOCATION = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
 
+
+def extractActivities(response):
+  activities = []
+
+  for session in response.get('sessions', []):
+    for activity in session.get('activities', []):
+      activities.append(activity)
+  return activities
+
 def generateInserts(clientId, activities):
   inserts = []
   for activity in activities:
